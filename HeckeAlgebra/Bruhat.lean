@@ -1,7 +1,7 @@
-import Mathlib.GroupTheory.Coxeter.inversion
 import Mathlib.Order.Interval.Basic
 import Init.Data.List.Lemmas
 import Mathlib.Order.RelSeries
+import HeckeAlgebra.StrongExchange
 
 open CoxeterSystem  List Relation
 open Classical (choose choose_spec)
@@ -14,59 +14,8 @@ variable {l : List B} {t : W}
 local prefix:100 "s" => cs.simple
 local prefix:100 "π" => cs.wordProd
 local prefix:100 "ℓ" => cs.length
-local prefix:100 "ris" => cs.rightInvSeq
-local prefix:100 "lis" => cs.leftInvSeq
 
 section StrongExchange
-
-@[simp]
-lemma nilIsReduced : cs.IsReduced [] := by simp [IsReduced]
-
-@[simp]
-lemma singletonIsReduced (h : l.length = 1) : cs.IsReduced l := by
-  simp [IsReduced, h, length_eq_one_iff,List.length_eq_one]
-  have := List.length_eq_one.1 h
-  obtain ⟨a, ha⟩ := this
-  exact ⟨a, by rw [ha]; simp⟩
-
-lemma StrongExchange {l : List B} (ht : cs.IsReflection t) : ℓ (π l * t) < ℓ π l →
-  ∃ l' : List B, π l' = π l * t ∧ ∃ i : Fin l.length, l' = l.eraseIdx i := by
-    sorry
-
-lemma StrongExchange' {l : List B} (ht : cs.IsReflection t) : ℓ (t * π l) < ℓ π l →
-  t ∈ lis l := sorry
-
-lemma StrongExchange'' {l : List B} (ht : cs.IsReflection t) : ℓ (π l * t) < ℓ π l →
-  t ∈ ris l := sorry
-
-/-- If l is not a reduced word of w but a experssion, there exist a subword of l is also a
-  expression of w. -/
-lemma DeletionExchange {l : List B} (h : ¬IsReduced cs l) :
-  ∃ i : Fin l.length, ∃ j : Fin i, π l = π (l.eraseIdx j).eraseIdx i := sorry
-
-private lemma DeletionExchange_aux {l : List B} (h : ¬IsReduced cs l) :
-  ∃ l', l' <+ l ∧ π l' = π l ∧ l'.length + 2 = l.length := sorry
-
-/-- If l is not a reduced word of w but a experssion, there must exist a subword of l which
-  is reduced word of w. -/
-lemma DeletionExchange' {l : List B} (h : ¬IsReduced cs l) :
-  ∃ l' : List B, l' <+ l ∧ π l' = π l ∧ IsReduced cs l' := by
-  generalize hl : l.length = n
-  revert l h
-  induction' n using Nat.twoStepInduction with n h1 _ <;> intro l h llsucc
-  · have : l = [] := List.eq_nil_of_length_eq_zero llsucc
-    rw [this] at h
-    exact (h <| nilIsReduced cs).elim
-  · exact (h (singletonIsReduced cs llsucc)).elim
-  · obtain ⟨ll, hll⟩ := DeletionExchange_aux cs h
-    have lll : ll.length = n := by linarith
-    by_cases hh : IsReduced cs ll
-    · exact ⟨ll, ⟨hll.1, ⟨hll.2.1, hh⟩ ⟩⟩
-    · obtain ⟨ll', hll'⟩ := h1 hh lll
-      exact ⟨ll', ⟨hll'.1.trans hll.1, ⟨hll'.2.1.trans hll.2.1, hll'.2.2⟩ ⟩ ⟩
-
--- lemma llt_of_not_reduced {l : List B} {w : W} (hw : w = π l) (nred : ¬IsReduced cs l) :
---   ℓ w < l.length := sorry
 
 end StrongExchange
 
@@ -276,18 +225,18 @@ lemma mul_simpleRefl_lt_adj {b v : cs.Group} (i : B) (h : lt_adj cs b v) :
             have redword_bsieq : π redword_bsi = b * s i := by
               simp_rw [redword_bsi, wordProd_append, wordProd_singleton]; rw [redword_bspec.2]
             rw [←redword_bsieq] at hlt
-            rcases StrongExchange cs IsReflt' hlt with ⟨ll', ⟨heq', ⟨i', hi'⟩ ⟩ ⟩
-            rw [redword_bsieq, heq, ←h1.2] at heq'
+            rcases strongExchangeProperty' cs redword_bsi
+              ⟨t', by convert IsReflection.conj h1.1 (s i); simp⟩ ⟨IsReflt', hlt⟩ with ⟨i', hi'⟩
+            rw [redword_bsieq, heq, ←h1.2] at hi'
             by_cases hdel_id : i' = redword_bsi.length - 1 <;> simp [redword_bsi] at *
-            · have : ll' = redword_b := by
-                rw [hi', hdel_id, eraseIdx_append_of_length_le (le_of_eq rfl)]
-                simp
-              rw [this, ←redword_bspec.2, h1.2, mul_assoc] at heq'
-              have : s i = t := by
-                nth_rw 1 [←mul_one b] at heq'
-                have := mul_left_cancel heq'
-                rw [←simple_sq cs i, pow_two] at this
-                exact mul_right_cancel this
+            · have : v * s i = b := by
+                simp [hdel_id] at hi'
+                rw [show redword_b.length = (redword_b ++ [i]).length - 1 by simp] at hi'
+                simp only [List.eraseIdx_length_sub_one] at hi'
+                simpa [←(redword_bspec.2)] using hi'
+              replace : v = b * s i := by
+                rw [←cs.inv_simple i]; exact eq_mul_inv_of_mul_eq this
+              have : s i = t := by simpa [this] using h1.2
               exact h2 this
             · have hi'lt : i'.1 < redword_b.length := by
                 push_neg at hdel_id
@@ -296,9 +245,9 @@ lemma mul_simpleRefl_lt_adj {b v : cs.Group} (i : B) (h : lt_adj cs b v) :
                 have : i'.1 ≤ redword_b.length  := Nat.le_of_lt_succ this
                 exact Nat.lt_of_le_of_ne this hdel_id
               rw [List.eraseIdx_append_of_lt_length hi'lt _] at hi'
-              rw [hi', wordProd_append, wordProd_singleton] at heq'
+              rw [wordProd_append, wordProd_singleton] at hi'
               have : cs.wordProd (redword_b.eraseIdx ↑i') = v := by
-                rw [←mul_one v, ←simple_sq cs i, pow_two, ←mul_assoc, ←heq']; simp
+                rw [←mul_one v, ←simple_sq cs i, pow_two, ←mul_assoc, hi']; simp
               have hcontra := cs.length_wordProd_le (redword_b.eraseIdx i')
               rw [this, length_eraseIdx redword_b i'] at hcontra
               have hcontra' : ℓ b < ℓ v := h.2

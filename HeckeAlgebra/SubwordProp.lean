@@ -7,7 +7,6 @@ variable {M : CoxeterMatrix B} (cs : CoxeterSystem M W)
 variable {l : List B} {t : W}
 variable {u v : cs.Group}
 
-
 open CoxeterSystem  List Relation
 open Classical (choose choose_spec)
 
@@ -33,8 +32,8 @@ lemma subword_of_lt_adj (veq : v = π ω) (h : lt_adj cs u v) :
     by_cases lred : IsReduced cs l
     · refine ⟨l, ⟨⟨lred, by rw [h1, ←veq, vtu]⟩, ?_ ⟩⟩
       rw [hi]; exact eraseIdx_sublist ω i.1
-    · let ll      := choose <| DeletionExchange' cs lred
-      let ll_spec := choose_spec <| DeletionExchange' cs lred
+    · let ll      := choose <| DeletionProperty cs lred
+      let ll_spec := choose_spec <| DeletionProperty cs lred
       refine  ⟨ll, ⟨?_ , ?_ ⟩⟩
       · exact ⟨ll_spec.2.2, by rw [←vtu, ll_spec.2.1, h1, ←veq]⟩
       · exact ll_spec.1.trans (by rw [hi]; exact eraseIdx_sublist ω i.1)
