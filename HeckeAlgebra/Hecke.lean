@@ -342,7 +342,7 @@ lemma smul_eq_muls_of_lt {i j : B} {w : cs.Group} (h1 : ℓ (s i * w * s j) = �
     simp [←hl.2]; omega
   have hL' : π ([i] ++ l) = s i * w := by simp [wordProd_cons, hl.2]
   simp [←hL'] at h4
-  have h5 := StrongExchange'' cs (cs.isReflection_simple j) h4
+  have h5 := StrongExchange'' cs ⟨(cs.isReflection_simple j), h4⟩
   set idx := List.idxOf (s j) (cs.rightInvSeq (i :: l)) with hidx
   by_cases lnil : l = []
   · simp [lnil] at hl h5

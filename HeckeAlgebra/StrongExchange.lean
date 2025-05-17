@@ -528,11 +528,17 @@ theorem strongExchangeProperty' (l : List B) (t : cs.Reflection)
   use ⟨l.length - 1 - k, by rw [←length_reverse l]; omega⟩
   exact eq_of_mul_inv_eq_one (mul_eq_one_iff_inv_eq.2 hk)
 
-lemma StrongExchange' {l : List B} (ht : cs.IsReflection t) : ℓ (t * π l) < ℓ π l →
-  t ∈ lis l := sorry
+lemma StrongExchange' {l : List B} {t : W} (ht : cs.IsLeftInversion (π l) t) :
+    t ∈ lis l := by
+  obtain ⟨k, hk⟩ := strongExchangeProperty cs l ⟨t, ht.1⟩ ht
+  simp [←cs.getD_leftInvSeq_mul_wordProd] at hk
+  simp only [hk, getElem_mem]
 
-lemma StrongExchange'' {l : List B} (ht : cs.IsReflection t) : ℓ (π l * t) < ℓ π l →
-  t ∈ ris l := sorry
+lemma StrongExchange'' {l : List B} {t : W} (ht : cs.IsRightInversion (π l) t) :
+    t ∈ ris l := by
+  obtain ⟨k, hk⟩ := strongExchangeProperty' cs l ⟨t, ht.1⟩ ht
+  simp [←cs.wordProd_mul_getD_rightInvSeq] at hk
+  simp only [hk, getElem_mem]
 
 @[simp]
 lemma singletonIsReduced (h : l.length = 1) : cs.IsReduced l := by
